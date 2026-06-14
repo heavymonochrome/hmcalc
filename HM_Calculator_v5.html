@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HM Calculator v3</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#111;color:#fff;max-width:900px;margin:auto;padding:20px}
+.card{background:#1b1b1b;border:1px solid #333;border-radius:16px;padding:20px;margin-bottom:18px}
+h1,h2{margin-top:0}
+label{display:block;margin:12px 0 6px;font-weight:600}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #444;background:#222;color:#fff;box-sizing:border-box}
+button{padding:10px 16px;border:none;border-radius:10px;background:#333;color:#fff;margin:4px;cursor:pointer}
+.mainbtn{background:#e5e5e5;color:#000;font-weight:700}
+.result{font-size:22px;font-weight:700;margin-top:15px}
+.green{color:#4ade80}.red{color:#f87171}
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<h1>HM Calculator</h1>
+<button class="mainbtn" onclick="resetCalculator()">🔄 New Calculation</button>
+</div>
+
+<div class="card">
+<h2>Global Input</h2>
+
+<label>Harga RMB</label>
+<input id="rmb" placeholder="Masukkan Harga RMB">
+
+<label>Komisi Reseller</label>
+<div>
+<button onclick="setKomisi(0)">0</button>
+<button onclick="setKomisi(50000)">50K</button>
+<button onclick="setKomisi(100000)">100K</button>
+</div>
+<input id="komisi" placeholder="Pilih atau masukkan komisi reseller">
+</div>
+
+<div class="card">
+<h2>📈 Profit Calculator</h2>
+
+<label>Harga Jual</label>
+<input id="jual" placeholder="Masukkan Harga Jual">
+
+<button class="mainbtn" onclick="profit()">Hitung Profit</button>
+
+<div id="profitResult" class="result"></div>
+</div>
+
+<div class="card">
+<h2>🎯 Target Profit</h2>
+
+<div>
+<button onclick="setTarget(300000)">300K</button>
+<button onclick="setTarget(400000)">400K</button>
+<button onclick="setTarget(500000)">500K</button>
+<button onclick="setTarget(750000)">750K</button>
+<button onclick="setTarget(1000000)">1JT</button>
+</div>
+
+<label>Target Profit</label>
+<input id="target" placeholder="Masukkan target profit">
+
+<button class="mainbtn" onclick="targetProfit()">Hitung Harga Jual</button>
+
+<div id="targetResult" class="result"></div>
+</div>
+
+<div class="card">
+<h2>⚙️ Settings</h2>
+
+<label>Kurs</label>
+<input id="kurs" value="2650">
+
+<label>Ongkir China (RMB)</label>
+<input id="ongkir" value="10">
+
+<label>Expedisi</label>
+<input id="expedisi" value="280.000">
+
+<label>Donasi</label>
+<input id="donasi" value="20.000">
+
+<label>Box</label>
+<input id="box" value="5.000">
+
+<label>Marketplace Fee (%)</label>
+<input id="fee" value="23.5">
+
+<label>Pajak (%)</label>
+<input id="pajak" value="0.5">
+</div>
+
+<script>
+function rp(n){return "Rp "+Math.round(n).toLocaleString('id-ID');}
+
+function resetCalculator(){
+ document.getElementById('rmb').value='';
+ document.getElementById('jual').value='';
+ document.getElementById('komisi').value='';
+ document.getElementById('target').value='';
+ document.getElementById('profitResult').innerHTML='';
+ document.getElementById('targetResult').innerHTML='';
+}
+
+function formatInput(el){
+ let v=el.value.replace(/\D/g,'');
+ if(!v){el.value='';return;}
+ el.value=Number(v).toLocaleString('id-ID');
+}
+function num(id){
+ return Number(document.getElementById(id).value.replace(/\./g,''))||0;
+}
+["jual","komisi","target","expedisi","donasi","box"].forEach(id=>{
+ document.getElementById(id).addEventListener("input",e=>formatInput(e.target));
+});
+
+function setKomisi(v){
+ document.getElementById("komisi").value=v.toLocaleString('id-ID');
+}
+function setTarget(v){
+ document.getElementById("target").value=v.toLocaleString('id-ID');
+}
+
+function totalModal(){
+ const rmb=Number(document.getElementById('rmb').value)||0;
+ return ((rmb+Number(document.getElementById('ongkir').value))*Number(document.getElementById('kurs').value))
+ + num('expedisi') + num('donasi') + num('box');
+}
+
+function profit(){
+ const jual=num('jual');
+ const komisi=num('komisi');
+ const modal=totalModal();
+ const market=jual*(Number(document.getElementById('fee').value)/100);
+ const pajak=jual*(Number(document.getElementById('pajak').value)/100);
+ const p=jual-modal-market-pajak-komisi;
+ const margin=jual?((p/jual)*100):0;
+ document.getElementById('profitResult').innerHTML=
+ `<span class="${p>=0?'green':'red'}">Profit Bersih: ${rp(p)}<br>Margin: ${margin.toFixed(2)}%</span>`;
+}
+
+function targetProfit(){
+ const target=num('target');
+ const komisi=num('komisi');
+ const modal=totalModal();
+ const fee=(Number(document.getElementById('fee').value)+Number(document.getElementById('pajak').value))/100;
+ const jual=(target+modal+komisi)/(1-fee);
+ document.getElementById('targetResult').innerHTML=`Harga Jual Minimum: ${rp(jual)}`;
+}
+</script>
+
+</body>
+</html>
