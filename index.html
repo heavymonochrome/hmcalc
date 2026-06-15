@@ -1,14 +1,22 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HM Calculator V6.1</title>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HM Calculator V6.3</title>
 <style>
 body{font-family:Arial,sans-serif;background:#111;color:#fff;max-width:900px;margin:auto;padding:20px}
-.card{background:#1b1b1b;border:1px solid #333;border-radius:12px;padding:16px;margin-bottom:16px}
-input{width:100%;padding:10px;margin:6px 0 12px;background:#222;color:#fff;border:1px solid #444;border-radius:8px;box-sizing:border-box}
-button{padding:10px 14px;margin:4px;border:none;border-radius:8px;cursor:pointer}
-table{width:100%;border-collapse:collapse} td,th{padding:8px;border-bottom:1px solid #333}
-</style></head><body>
-<h1>HM Calculator V6.1</h1>
+.card{background:#1b1b1b;border:1px solid #333;border-radius:16px;padding:16px;margin-bottom:16px}
+input{width:100%;padding:12px;margin:6px 0 12px;border-radius:10px;border:1px solid #444;background:#222;color:#fff;box-sizing:border-box}
+button{padding:10px 14px;border:none;border-radius:10px;cursor:pointer;margin:4px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #333;text-align:left}
+label{font-weight:bold}
+summary{cursor:pointer;font-size:22px;font-weight:bold}
+</style>
+</head>
+<body>
+<h1>HM Calculator V6.3</h1>
 
 <div class="card">
 <button onclick="resetCalc()">🔄 New Calculation</button>
@@ -20,61 +28,149 @@ table{width:100%;border-collapse:collapse} td,th{padding:8px;border-bottom:1px s
 <button onclick="setKomisi(50000)">50K</button>
 <button onclick="setKomisi(100000)">100K</button>
 <button onclick="setKomisi(150000)">150K</button>
-<input id="komisi" placeholder="Custom komisi (opsional)">
+<input id="komisi" placeholder="Custom komisi">
 </div>
 
 <div class="card">
-<h3>Profit Calculator</h3>
+<h3>📈 Profit Calculator</h3>
 <label>Harga Jual</label><input id="jual">
-<button onclick="profit()">Hitung Profit</button>
+
 <div id="profitResult"></div>
 </div>
 
 <div class="card">
 <h3>🎯 Pricing Table</h3>
-<button onclick="pricingTable()">Generate Pricing Table</button>
+
 <div id="pricing"></div>
 </div>
 
 <div class="card">
-<h3>Settings</h3>
-<input id="kurs" value="2650">
-<input id="ongkir" value="10">
-<input id="expedisi" value="280000">
-<input id="donasi" value="20000">
-<input id="box" value="5000">
-<input id="fee" value="23.5">
-<input id="pajak" value="0.5">
+<details>
+<summary>⚙️ Settings</summary>
+<label>Kurs (IDR per RMB)</label><input id="kurs" value="2650">
+<label>Ongkir China (RMB)</label><input id="ongkir" value="10">
+<label>Biaya Expedisi per Pasang (IDR)</label><input id="expedisi" value="280.000">
+<label>Donasi (IDR)</label><input id="donasi" value="20.000">
+<label>Box (IDR)</label><input id="box" value="5.000">
+<label>Marketplace Fee (%)</label><input id="fee" value="23.5">
+<label>Pajak (%)</label><input id="pajak" value="0.5">
+</details>
 </div>
 
 <script>
-function n(v){return Number((v||'').replace(/[^0-9]/g,''))||0;}
-function rp(x){return 'Rp '+Math.round(x).toLocaleString('id-ID');}
-function setKomisi(v){document.getElementById('komisi').value=v.toLocaleString('id-ID');}
-function modalTotal(){
- let m=n(modal.value); if(m>0) return m;
- let r=n(rmb.value);
- return ((r+Number(ongkir.value))*Number(kurs.value))+Number(expedisi.value)+Number(donasi.value)+Number(box.value);
+const saveIds=['kurs','ongkir','expedisi','donasi','box','fee','pajak'];
+
+function num(v){return Number((v||'').replace(/\./g,''))||0;}
+function rp(v){return 'Rp '+Math.round(v).toLocaleString('id-ID');}
+
+function autoRefresh(){
+  const adaModal =
+    num(document.getElementById('rmb').value) > 0 ||
+    num(document.getElementById('modal').value) > 0;
+
+  if(num(document.getElementById('jual').value) > 0){
+    profit();
+  }
+
+  if(adaModal){
+    pricingTable();
+  }
 }
-function profit(){
- let jualv=n(jual.value), kom=n(komisi.value), modalv=modalTotal();
- let market=jualv*(Number(fee.value)/100), tax=jualv*(Number(pajak.value)/100);
- let p=jualv-modalv-market-tax-kom;
- profitResult.innerHTML=`<b>Profit Bersih:</b> ${rp(p)}<br><b>Margin:</b> ${jualv?((p/jualv)*100).toFixed(2):0}%`;
-}
-function pricingTable(){
- let kom=n(komisi.value), modalv=modalTotal();
- let pct=(Number(fee.value)+Number(pajak.value))/100;
- let arr=[200000,250000,300000,350000,400000,450000,500000];
- let h='<table><tr><th>Profit</th><th>Harga Jual</th><th>Rekomendasi</th></tr>';
- arr.forEach(p=>{
-   let jual=(p+modalv+kom)/(1-pct);
-   let rec=Math.ceil(jual/50000)*50000-1000;
-   h+=`<tr><td>${rp(p)}</td><td>${rp(jual)}</td><td>${rp(rec)}</td></tr>`;
+
+saveIds.forEach(id=>{
+ const el=document.getElementById(id);
+ const saved=localStorage.getItem(id);
+ if(saved) el.value=saved;
+ el.addEventListener('input',()=>{
+   localStorage.setItem(id,el.value);
+   autoRefresh();
  });
- h+='</table>';
- pricing.innerHTML=h;
+});
+
+function formatInput(el){
+ const digits = el.value.replace(/[^\d]/g,'');
+
+ if(!digits){
+   el.value='';
+   return;
+ }
+
+ el.value = parseInt(digits,10).toLocaleString('id-ID');
 }
-function resetCalc(){['rmb','modal','komisi','jual'].forEach(i=>document.getElementById(i).value=''); profitResult.innerHTML=''; pricing.innerHTML='';}
+
+['rmb','modal','komisi','expedisi','donasi','box'].forEach(id=>{
+ document.getElementById(id).addEventListener('input',e=>{
+   formatInput(e.target);
+   autoRefresh();
+ });
+});
+
+
+document.getElementById('jual').addEventListener('input',e=>{
+  formatInput(e.target);
+  profit();
+});
+
+['kurs','ongkir'].forEach(id=>{
+ document.getElementById(id).addEventListener('input',autoRefresh);
+});
+
+function setKomisi(v){
+ document.getElementById('komisi').value=v.toLocaleString('id-ID');
+ autoRefresh();
+}
+
+function totalModal(){
+ const modal=num(document.getElementById('modal').value);
+ if(modal>0) return modal;
+ const rmb=num(document.getElementById('rmb').value);
+ return ((rmb+Number(document.getElementById('ongkir').value))*Number(document.getElementById('kurs').value))
+ + num(document.getElementById('expedisi').value)
+ + num(document.getElementById('donasi').value)
+ + num(document.getElementById('box').value);
+}
+
+function profit(){
+ const jual=num(document.getElementById('jual').value);
+ const komisi=num(document.getElementById('komisi').value);
+ const modal=totalModal();
+ const feeNom=jual*(Number(document.getElementById('fee').value)/100);
+ const pajakNom=jual*(Number(document.getElementById('pajak').value)/100);
+ const bersih=jual-modal-feeNom-pajakNom-komisi;
+ const margin=jual?((bersih/jual)*100):0;
+
+ document.getElementById('profitResult').innerHTML=`
+ <table>
+ <tr><td>Modal Barang</td><td>${rp(modal)}</td></tr>
+ <tr><td>Marketplace Fee</td><td>${rp(feeNom)}</td></tr>
+ <tr><td>Pajak</td><td>${rp(pajakNom)}</td></tr>
+ <tr><td>Komisi</td><td>${rp(komisi)}</td></tr>
+ <tr><th>Profit Bersih</th><th>${rp(bersih)}</th></tr>
+ <tr><th>Margin</th><th>${margin.toFixed(2)}%</th></tr>
+ </table>`;
+}
+
+function pricingTable(){
+ const profits=[200000,250000,300000,350000,400000,450000,500000];
+ const komisi=num(document.getElementById('komisi').value);
+ const modal=totalModal();
+ const pct=(Number(document.getElementById('fee').value)+Number(document.getElementById('pajak').value))/100;
+
+ let html='<table><tr><th>Profit</th><th>Harga Jual</th><th>Rekomendasi</th></tr>';
+ profits.forEach(p=>{
+   const jual=(p+modal+komisi)/(1-pct);
+   const rekom=Math.ceil(jual/50000)*50000-1000;
+   html+=`<tr><td>${rp(p)}</td><td>${rp(jual)}</td><td>${rp(rekom)}</td></tr>`;
+ });
+ html+='</table>';
+ document.getElementById('pricing').innerHTML=html;
+}
+
+function resetCalc(){
+ ['rmb','modal','komisi','jual'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('profitResult').innerHTML='';
+ document.getElementById('pricing').innerHTML='';
+}
 </script>
-</body></html>
+</body>
+</html>
